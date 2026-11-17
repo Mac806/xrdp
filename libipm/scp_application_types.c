@@ -139,3 +139,30 @@ scp_kill_session_status_to_str(enum scp_kill_session_status n,
 
     return buff;
 }
+
+/*****************************************************************************/
+const char *
+scp_audit_history_status_to_str(enum scp_audit_history_status n,
+                                char *buff, unsigned int buff_size)
+{
+    const char *str =
+        (n == E_SCP_AH_RECORD) ? "OK" :
+        (n == E_SCP_AH_END_OF_LIST) ? "OK" :
+        (n == E_SCP_AH_NOT_LOGGED_IN) ? "Connection is not logged in" :
+        (n == E_SCP_AH_NOT_ADMIN) ? "Only administrators can read the audit log" :
+        (n == E_SCP_AH_BAD_COUNT) ? "Number of lines is out of range" :
+        (n == E_SCP_AH_DISABLED) ? "The audit log is not enabled" :
+        (n == E_SCP_AH_READ_ERROR) ? "sesman can't read the audit log" :
+        /* Default */ NULL;
+
+    if (str == NULL)
+    {
+        g_snprintf(buff, buff_size, "[audit history error code #%d]", (int)n);
+    }
+    else
+    {
+        g_snprintf(buff, buff_size, "%s", str);
+    }
+
+    return buff;
+}

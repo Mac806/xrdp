@@ -14,7 +14,8 @@ check_PROGRAMS = test_sesman
 test_sesman_SOURCES = \
     test_sesman_main.c \
     test_sesman.h \
-    test_login_ban.c
+    test_login_ban.c \
+    test_session_audit.c
 
 test_sesman_CFLAGS = \
     @CHECK_CFLAGS@

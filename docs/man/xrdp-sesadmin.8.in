@@ -52,6 +52,13 @@ is no such session.
 .IP
 Only processes which \fBxrdp\-sesman\fP knows to be sessions can be
 terminated with this command.
+.TP
+.BR history [: \fIlines\fP]
+Shows the last \fIlines\fP lines (default 20, at most 1000) of the
+session audit log, oldest first. Only members of the
+\fBTerminalServerAdmins\fR group can use this command, as the log shows
+the logins of all users. The audit log is set with \fBAuditLog\fR in
+\fBsesman.ini\fR(5).
 .RE
 
 .SH EXIT STATUS
@@ -69,12 +76,16 @@ Show the sessions and their session ids.
 .TP
 .B xrdp\-sesadmin \-c=kill:3124
 Terminate session 3124.
+.TP
+.B xrdp\-sesadmin \-c=history:50
+Show the last 50 lines of the session audit log.
 
 .SH FILES
 xrdp\-sesadmin.log
 
 .SH SEE ALSO
-.BR xrdp (8).
+.BR xrdp (8),
+.BR sesman.ini (5).
 
 More info on \fBxrdp\fR can be found on the
 .UR @xrdphomeurl@

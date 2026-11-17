@@ -244,4 +244,54 @@ const char *
 scp_kill_session_status_to_str(enum scp_kill_session_status n,
                                char *buff, unsigned int buff_size);
 
+/**
+ * Status of an audit history message
+ */
+enum scp_audit_history_status
+{
+    /**
+     * This message contains one line of the audit log, and other
+     * messages will follow
+     */
+    E_SCP_AH_RECORD = 0,
+
+    /**
+     * This message marks the end of the lines. No line is
+     * contained in the message
+     */
+    E_SCP_AH_END_OF_LIST,
+
+    /**
+     * Client hasn't logged in yet
+     */
+    E_SCP_AH_NOT_LOGGED_IN = 100,
+    /**
+     * Only administrators (TerminalServerAdmins) can read the audit log
+     */
+    E_SCP_AH_NOT_ADMIN,
+    /**
+     * The number of lines asked for is out of range
+     */
+    E_SCP_AH_BAD_COUNT,
+    /**
+     * The audit log is not enabled in sesman.ini
+     */
+    E_SCP_AH_DISABLED,
+    /**
+     * sesman could not read the audit log
+     */
+    E_SCP_AH_READ_ERROR
+};
+
+/**
+ * Convert an audit history status code to a readable string for output
+ * @param n Status code
+ * @param buff to contain string
+ * @param buff_size length of buff
+ * @return buff is returned for convenience.
+ */
+const char *
+scp_audit_history_status_to_str(enum scp_audit_history_status n,
+                                char *buff, unsigned int buff_size);
+
 #endif /* SCP_APPLICATION_TYPES_H */

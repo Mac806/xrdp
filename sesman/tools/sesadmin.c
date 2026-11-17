@@ -42,8 +42,14 @@ char port[257];
 
 static int cmndList(struct trans *t);
 static int cmndKill(struct trans *t, const char *sid_str);
+static int cmndHistory(struct trans *t, int count);
 static void cmndHelp(void);
 static int parse_sid(const char *str, int *sid);
+
+/* Lines shown by 'history' with no count */
+#define DEFAULT_HISTORY_LINES 20
+/* Must match SESSION_AUDIT_MAX_HISTORY in sesman */
+#define MAX_HISTORY_LINES 1000
 
 
 int main(int argc, char **argv)
@@ -54,6 +60,7 @@ int main(int argc, char **argv)
     //int sel;
     struct log_config *logging;
     int rv = 1;
+    int history_count = DEFAULT_HISTORY_LINES;
 
     cmnd[0] = '\0';
     port[0] = '\0';
@@ -90,7 +97,9 @@ int main(int argc, char **argv)
 
     /* Check the command before connecting to sesman, so that
      * mistakes are reported straight away */
-    if (0 != g_strcmp(cmnd, "list") && 0 != g_strncmp(cmnd, "kill:", 5))
+    if (0 != g_strcmp(cmnd, "list") && 0 != g_strncmp(cmnd, "kill:", 5) &&
+            0 != g_strcmp(cmnd, "history") &&
+            0 != g_strncmp(cmnd, "history:", 8))
     {
         fprintf(stderr, "Unknown command '%s'\n\n", cmnd);
         cmndHelp();
@@ -106,6 +115,15 @@ int main(int argc, char **argv)
                     "Use 'list' to see the session IDs\n", cmnd + 5);
             return 1;
         }
+    }
+
+    if (0 == g_strncmp(cmnd, "history:", 8) &&
+            (parse_sid(cmnd + 8, &history_count) != 0 ||
+             history_count > MAX_HISTORY_LINES))
+    {
+        fprintf(stderr, "Invalid number of lines '%s'. "
+                "Use a number from 1 to %d\n", cmnd + 8, MAX_HISTORY_LINES);
+        return 1;
     }
 
     t = scp_connect(port, "xrdp-sesadmin", NULL);
@@ -130,6 +148,10 @@ int main(int argc, char **argv)
         {
             rv = cmndKill(t, cmnd + 5);
         }
+        else
+        {
+            rv = cmndHistory(t, history_count);
+        }
     }
 
     if (rv == 0)
@@ -152,6 +174,8 @@ cmndHelp(void)
     fprintf(stderr, "               it can be one of those:\n");
     fprintf(stderr, "               list\n");
     fprintf(stderr, "               kill:<sid>\n");
+    fprintf(stderr, "               history[:<lines>]  (admins only, "
+            "default %d lines)\n", DEFAULT_HISTORY_LINES);
 }
 
 static void
@@ -285,5 +309,42 @@ cmndKill(struct trans *t, const char *sid_str)
         printf("Session %d is being terminated\n", sid);
     }
 
+    return rv;
+}
+
+static int
+cmndHistory(struct trans *t, int count)
+{
+    int rv = 0;
+    enum scp_audit_history_status status;
+    struct list *lines = scp_sync_audit_history_request(t, count, &status);
+
+    if (lines == NULL)
+    {
+        fprintf(stderr, "No response from sesman\n");
+        return 1;
+    }
+
+    if (status != E_SCP_AH_END_OF_LIST)
+    {
+        char msg[64];
+        scp_audit_history_status_to_str(status, msg, sizeof(msg));
+        fprintf(stderr, "Can't show audit history: %s\n", msg);
+        rv = 1;
+    }
+    else if (lines->count == 0)
+    {
+        printf("The audit log is empty.\n");
+    }
+    else
+    {
+        int i;
+        for (i = 0 ; i < lines->count; ++i)
+        {
+            printf("%s\n", (const char *)lines->items[i]);
+        }
+    }
+
+    list_delete(lines);
     return rv;
 }

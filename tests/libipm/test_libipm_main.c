@@ -244,6 +244,7 @@ int main (void)
     sr = srunner_create (make_suite_test_libipm_send_calls());
     srunner_add_suite (sr, make_suite_test_libipm_recv_calls());
     srunner_add_suite (sr, make_suite_test_scp_kill_session());
+    srunner_add_suite (sr, make_suite_test_scp_audit_history());
 
     srunner_set_tap(sr, "-");
     /*

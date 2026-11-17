@@ -145,6 +145,14 @@ Policy=Default
 ; Milliseconds to wait to ensure the session has started
 StartupWaitTime=1500
 
+[Audit]
+; One line is written to this file for each session start, finish,
+; client connect and disconnect, session kill and blocked IP address.
+; Admins (TerminalServerAdmins) can show the last lines with
+;   xrdp-sesadmin -c=history:20
+; Give a full path. Leave empty to disable the audit log.
+AuditLog=/var/log/xrdp-session-audit.log
+
 [Logging]
 ; Note: Log levels can be any of: core, error, warning, info, debug, or trace
 LogFile=xrdp-sesman.log

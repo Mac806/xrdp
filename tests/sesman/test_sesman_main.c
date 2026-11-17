@@ -49,6 +49,7 @@ int main (void)
     log_config_free(logging);
 
     sr = srunner_create (make_suite_test_login_ban());
+    srunner_add_suite(sr, make_suite_test_session_audit());
     srunner_set_tap(sr, "-");
     srunner_run_all (sr, CK_ENV);
     number_failed = srunner_ntests_failed(sr);

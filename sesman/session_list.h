@@ -73,6 +73,11 @@ struct session_item
     time_t last_connect_disconnect;
     char xrdp_instance_name[MAX_XRDP_INSTANCE_NAMELEN];
     /* allow a tag to be specified to distinguish sessions */
+    /**
+     * Set for a session found again after sesman restarts. The session
+     * replays its announce and connect (or disconnect) events, which
+     * must not be audited as new events */
+    int recovering;
 };
 
 /**

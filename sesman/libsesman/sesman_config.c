@@ -55,6 +55,9 @@
 
 #define SESMAN_CFG_SESSION_VARIABLES "SessionVariables"
 
+#define SESMAN_CFG_AUDIT             "Audit"
+#define SESMAN_CFG_AUDIT_LOG         "AuditLog"
+
 /*
 #define SESMAN_CFG_LOGGING           "Logging"
 #define SESMAN_CFG_LOG_FILE          "LogFile"
@@ -635,6 +638,47 @@ config_read_vnc_params(int file, struct config_sesman *cs, struct list *param_n,
 }
 
 /******************************************************************************/
+/**
+ * Reads the [Audit] section
+ */
+static int
+config_read_audit(int file, struct config_sesman *cs,
+                  struct list *param_n, struct list *param_v)
+{
+    int i;
+
+    list_clear(param_v);
+    list_clear(param_n);
+
+    cs->audit_log = g_strdup("");
+
+    file_read_section(file, SESMAN_CFG_AUDIT, param_n, param_v);
+    for (i = 0; i < param_n->count; i++)
+    {
+        const char *name = (const char *)list_get_item(param_n, i);
+        const char *value = (const char *)list_get_item(param_v, i);
+
+        if (g_strcasecmp(name, SESMAN_CFG_AUDIT_LOG) == 0)
+        {
+            if (value[0] != '\0' && value[0] != '/')
+            {
+                /* A relative path would depend on the current
+                 * directory, which changes when sesman is a daemon */
+                LOG(LOG_LEVEL_WARNING,
+                    "AuditLog must be a full path - audit log disabled");
+            }
+            else
+            {
+                g_free(cs->audit_log);
+                cs->audit_log = g_strdup(value);
+            }
+        }
+    }
+
+    return 0;
+}
+
+/******************************************************************************/
 static int
 config_read_session_variables(int file, struct config_sesman *cs,
                               struct list *param_n, struct list *param_v)
@@ -703,6 +747,8 @@ config_read(const char *sesman_ini)
 
                 config_read_session_variables(fd, cfg, param_n, param_v);
 
+                config_read_audit(fd, cfg, param_n, param_v);
+
                 /* cleanup */
                 list_delete(sec);
                 list_delete(param_v);
@@ -744,6 +790,12 @@ config_dump(struct config_sesman *config)
     g_writeln("    AlwaysRunReconnect:       %d", config->always_run_reconnect);
     g_writeln("    AuthFilePath:             %s",
               (config->auth_file_path ? config->auth_file_path : "disabled"));
+
+    /* Audit configuration */
+    g_writeln("Audit configuration:");
+    g_writeln("    AuditLog:                 %s",
+              (config->audit_log != NULL && config->audit_log[0] != '\0') ?
+              config->audit_log : "disabled");
 
     /* Session configuration */
     config_output_policy_string(se->policy, policy_s, sizeof(policy_s));
@@ -840,6 +892,7 @@ config_free(struct config_sesman *cs)
         g_free(cs->sec.ts_users);
         g_free(cs->sec.ts_admins);
         g_free(cs->sec.session_sockdir_group);
+        g_free(cs->audit_log);
         g_free(cs);
     }
 }

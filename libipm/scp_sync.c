@@ -227,3 +227,55 @@ scp_sync_kill_session_request(struct trans *t, int sid,
 
     return rv;
 }
+
+/*****************************************************************************/
+struct list *
+scp_sync_audit_history_request(struct trans *t, int count,
+                               enum scp_audit_history_status *status)
+{
+    struct list *lines = list_create();
+    int rv;
+
+    if (lines == NULL)
+    {
+        LOG(LOG_LEVEL_ERROR, "Out of memory for audit history");
+        return NULL;
+    }
+    lines->auto_free = 1;
+    *status = E_SCP_AH_READ_ERROR;
+
+    rv = scp_send_audit_history_request(t, count);
+    while (rv == 0)
+    {
+        const char *line;
+
+        if ((rv = scp_sync_wait_specific(t,
+                                         E_SCP_AUDIT_HISTORY_RESPONSE)) != 0 ||
+                (rv = scp_get_audit_history_response(t, status, &line)) != 0)
+        {
+            break;
+        }
+
+        if (*status == E_SCP_AH_RECORD)
+        {
+            if (!list_add_strdup(lines, line))
+            {
+                LOG(LOG_LEVEL_ERROR, "Out of memory for audit history");
+                rv = 1;
+            }
+        }
+        scp_msg_in_reset(t); // Done with this message
+
+        if (*status != E_SCP_AH_RECORD)
+        {
+            break; // End of list, or an error status
+        }
+    }
+
+    if (rv != 0)
+    {
+        list_delete(lines);
+        lines = NULL;
+    }
+    return lines;
+}
