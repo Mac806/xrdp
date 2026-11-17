@@ -994,8 +994,12 @@ void
 sesman_audit_session(int event, const struct session_item *si,
                      const char *ip, const char *client, const char *actor)
 {
-    struct session_audit_record rec = {0};
+    struct session_audit_record rec;
     char *username = NULL;
+
+    /* {0} can't be used - the first field is an enum, and xrdp is also
+     * built as C++ */
+    g_memset(&rec, 0, sizeof(rec));
 
     if (g_cfg->audit_log == NULL || g_cfg->audit_log[0] == '\0' ||
             si == NULL)
@@ -1023,8 +1027,9 @@ sesman_audit_session(int event, const struct session_item *si,
 void
 sesman_audit_ip_blocked(const char *ip, const char *username)
 {
-    struct session_audit_record rec = {0};
+    struct session_audit_record rec;
 
+    g_memset(&rec, 0, sizeof(rec));
     rec.event = SA_IP_BLOCKED;
     rec.time = time(NULL);
     rec.ip = ip;
