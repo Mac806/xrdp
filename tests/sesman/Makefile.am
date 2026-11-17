@@ -22,5 +22,6 @@ test_sesman_CFLAGS = \
 
 test_sesman_LDADD = \
     $(top_builddir)/sesman/libsesman/libsesman.la \
+    $(top_builddir)/libipm/libipm.la \
     $(top_builddir)/common/libcommon.la \
     @CHECK_LIBS@

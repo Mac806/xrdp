@@ -330,7 +330,7 @@ session_audit_read_last(const char *path, unsigned int count)
          * (probably partial) line */
         if (start > 0)
         {
-            char *nl = memchr(p, '\n', got);
+            char *nl = (char *)memchr(p, '\n', got);
             p = (nl == NULL) ? end : nl + 1;
         }
 
@@ -349,7 +349,7 @@ session_audit_read_last(const char *path, unsigned int count)
 
         while (p < end)
         {
-            char *nl = memchr(p, '\n', (size_t)(end - p));
+            char *nl = (char *)memchr(p, '\n', (size_t)(end - p));
             if (nl == NULL)
             {
                 break; /* Incomplete last line - being written now */
