@@ -71,5 +71,6 @@ get_open_fd_count(void);
 
 Suite *make_suite_test_libipm_send_calls(void);
 Suite *make_suite_test_libipm_recv_calls(void);
+Suite *make_suite_test_scp_kill_session(void);
 
 #endif /* TEST_LIBIPM__H */

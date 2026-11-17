@@ -65,8 +65,13 @@ enum scp_msg_code
     E_SCP_CREATE_SOCKDIR_REQUEST,
     E_SCP_CREATE_SOCKDIR_RESPONSE,
 
-    E_SCP_CLOSE_CONNECTION_REQUEST
+    E_SCP_CLOSE_CONNECTION_REQUEST,
     // No E_SCP_CLOSE_CONNECTION_RESPONSE
+
+    /* New messages are added at the end, so the numbers of the
+     * existing messages don't change */
+    E_SCP_KILL_SESSION_REQUEST,
+    E_SCP_KILL_SESSION_RESPONSE
 };
 
 /* Common facilities */
@@ -590,6 +595,53 @@ scp_get_create_sockdir_response(struct trans *trans,
  */
 int
 scp_send_close_connection_request(struct trans *trans);
+
+/**
+ * Send an E_SCP_KILL_SESSION_REQUEST (SCP client)
+ *
+ * @param trans SCP transport
+ * @param sid Session ID to terminate (as shown by a list sessions request)
+ * @return != 0 for error
+ *
+ * An administrator can terminate any session. Other users can only
+ * terminate their own sessions.
+ *
+ * Server replies with E_SCP_KILL_SESSION_RESPONSE
+ */
+int
+scp_send_kill_session_request(struct trans *trans, int sid);
+
+/**
+ * Parse an incoming E_SCP_KILL_SESSION_REQUEST (SCP server)
+ *
+ * @param trans SCP transport
+ * @param[out] sid Session ID to terminate
+ * @return != 0 for error
+ */
+int
+scp_get_kill_session_request(struct trans *trans, int *sid);
+
+/**
+ * Send an E_SCP_KILL_SESSION_RESPONSE (SCP server)
+ *
+ * @param trans SCP transport
+ * @param status Status of request
+ * @return != 0 for error
+ */
+int
+scp_send_kill_session_response(struct trans *trans,
+                               enum scp_kill_session_status status);
+
+/**
+ * Parse an incoming E_SCP_KILL_SESSION_RESPONSE (SCP client)
+ *
+ * @param trans SCP transport
+ * @param[out] status Status of request
+ * @return != 0 for error
+ */
+int
+scp_get_kill_session_response(struct trans *trans,
+                              enum scp_kill_session_status *status);
 
 
 #endif /* SCP_H */

@@ -198,4 +198,46 @@ enum scp_create_sockdir_status
     E_SCP_CS_OTHER_ERROR
 };
 
+/**
+ * Status of a kill session message
+ */
+enum scp_kill_session_status
+{
+    E_SCP_KS_OK = 0, ///< SIGTERM was sent to the session
+
+    /**
+     * Client hasn't logged in yet
+     */
+    E_SCP_KS_NOT_LOGGED_IN = 100,
+
+    /**
+     * No such session, or the session belongs to another user and
+     * the requester is not an administrator. These two cases are
+     * deliberately reported the same way, so that a normal user can't
+     * find out which session IDs other users have.
+     */
+    E_SCP_KS_NO_SUCH_SESSION,
+
+    /**
+     * The session ID is not a valid (positive) number
+     */
+    E_SCP_KS_BAD_SID,
+
+    /**
+     * sesman could not send a signal to the session
+     */
+    E_SCP_KS_SIGNAL_FAILED
+};
+
+/**
+ * Convert a kill session status code to a readable string for output
+ * @param n Status code
+ * @param buff to contain string
+ * @param buff_size length of buff
+ * @return buff is returned for convenience.
+ */
+const char *
+scp_kill_session_status_to_str(enum scp_kill_session_status n,
+                               char *buff, unsigned int buff_size);
+
 #endif /* SCP_APPLICATION_TYPES_H */

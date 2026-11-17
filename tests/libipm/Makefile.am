@@ -16,7 +16,8 @@ test_libipm_SOURCES = \
     test_libipm_main.c \
     test_libipm.h \
     test_libipm_send_calls.c \
-    test_libipm_recv_calls.c
+    test_libipm_recv_calls.c \
+    test_scp_kill_session.c
 
 test_libipm_CFLAGS = \
     @CHECK_CFLAGS@ \

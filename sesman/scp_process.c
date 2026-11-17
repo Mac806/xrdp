@@ -739,6 +739,66 @@ process_create_sockdir_request(struct scp_list_item *sli)
 /******************************************************************************/
 
 static int
+process_kill_session_request(struct scp_list_item *sli)
+{
+    int sid = 0;
+    enum scp_kill_session_status status = E_SCP_KS_NO_SUCH_SESSION;
+    int rv = scp_get_kill_session_request(sli->client_trans, &sid);
+
+    if (rv != 0)
+    {
+        /* Message is malformed. Close the connection */
+        LOG(LOG_LEVEL_ERROR, "Can't parse kill session request from %s",
+            sli->peername);
+        return rv;
+    }
+
+    if (sli->login_state == E_SLI_LOGIN_NOT_LOGGED_IN)
+    {
+        status = E_SCP_KS_NOT_LOGGED_IN;
+    }
+    else if (sid <= 0)
+    {
+        status = E_SCP_KS_BAD_SID;
+    }
+    else
+    {
+        struct session_item *si = session_list_get_bysid((pid_t)sid);
+
+        LOG(LOG_LEVEL_INFO,
+            "Received request from %s (user %s) to kill session %d",
+            sli->peername, sli->username, sid);
+
+        /* Only send a signal to a PID which is in our session list. This
+         * prevents the request being used to signal arbitrary processes.
+         *
+         * A normal user who asks for another user's session gets the
+         * same answer as for a session which doesn't exist. */
+        if (si == NULL || (!sli->is_admin && si->uid != sli->uid))
+        {
+            status = E_SCP_KS_NO_SUCH_SESSION;
+        }
+        else if (g_sigterm(si->sesexec_pid) != 0)
+        {
+            LOG(LOG_LEVEL_ERROR, "Can't send SIGTERM to session %d [%s]",
+                sid, g_get_strerror());
+            status = E_SCP_KS_SIGNAL_FAILED;
+        }
+        else
+        {
+            LOG(LOG_LEVEL_INFO, "Session %d (display %s) terminated by %s%s",
+                sid, si->display, sli->username,
+                sli->is_admin ? " (admin)" : "");
+            status = E_SCP_KS_OK;
+        }
+    }
+
+    return scp_send_kill_session_response(sli->client_trans, status);
+}
+
+/******************************************************************************/
+
+static int
 process_close_connection_request(struct scp_list_item *sli)
 {
     int rv = 0;
@@ -801,6 +861,10 @@ scp_process(struct scp_list_item *sli)
 
         case E_SCP_CLOSE_CONNECTION_REQUEST:
             rv = process_close_connection_request(sli);
+            break;
+
+        case E_SCP_KILL_SESSION_REQUEST:
+            rv = process_kill_session_request(sli);
             break;
 
         default:

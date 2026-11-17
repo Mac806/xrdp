@@ -60,6 +60,9 @@ msgno_to_str(unsigned short n)
         (n == E_SCP_LIST_SESSIONS_RESPONSE) ? "SCP_LIST_SESSIONS_RESPONSE" :
 
         (n == E_SCP_CLOSE_CONNECTION_REQUEST) ? "SCP_CLOSE_CONNECTION_REQUEST" :
+
+        (n == E_SCP_KILL_SESSION_REQUEST) ? "SCP_KILL_SESSION_REQUEST" :
+        (n == E_SCP_KILL_SESSION_RESPONSE) ? "SCP_KILL_SESSION_RESPONSE" :
         NULL;
 }
 
@@ -925,4 +928,58 @@ scp_send_close_connection_request(struct trans *trans)
                trans,
                (int)E_SCP_CLOSE_CONNECTION_REQUEST,
                NULL);
+}
+
+/*****************************************************************************/
+
+int
+scp_send_kill_session_request(struct trans *trans, int sid)
+{
+    return libipm_msg_out_simple_send(
+               trans,
+               (int)E_SCP_KILL_SESSION_REQUEST,
+               "i", sid);
+}
+
+/*****************************************************************************/
+
+int
+scp_get_kill_session_request(struct trans *trans, int *sid)
+{
+    int32_t i_sid = 0;
+    int rv = libipm_msg_in_parse(trans, "i", &i_sid);
+    if (rv == 0)
+    {
+        *sid = (int)i_sid;
+    }
+
+    return rv;
+}
+
+/*****************************************************************************/
+
+int
+scp_send_kill_session_response(struct trans *trans,
+                               enum scp_kill_session_status status)
+{
+    return libipm_msg_out_simple_send(
+               trans,
+               (int)E_SCP_KILL_SESSION_RESPONSE,
+               "i", status);
+}
+
+/*****************************************************************************/
+
+int
+scp_get_kill_session_response(struct trans *trans,
+                              enum scp_kill_session_status *status)
+{
+    int32_t i_status = 0;
+    int rv = libipm_msg_in_parse(trans, "i", &i_status);
+    if (rv == 0)
+    {
+        *status = (enum scp_kill_session_status)i_status;
+    }
+
+    return rv;
 }

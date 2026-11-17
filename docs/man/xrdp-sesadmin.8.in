@@ -41,9 +41,34 @@ List active sessions for the current user.  Members of the
 \fBTerminalServerAdmins\fR group can view active sessions for all users.
 .TP
 .BI kill: sid
-Kills the session specified the given \fIsession id\fP.
-(not yet implemented).
+Terminates the session with the given \fIsession id\fP, as shown by the
+\fBlist\fP command. The session is sent a SIGTERM signal, and closes in
+the same way as when the user logs out.
+.IP
+Users can terminate their own sessions. Members of the
+\fBTerminalServerAdmins\fR group can terminate any session. If the session
+does not exist, or belongs to another user, the command reports that there
+is no such session.
+.IP
+Only processes which \fBxrdp\-sesman\fP knows to be sessions can be
+terminated with this command.
 .RE
+
+.SH EXIT STATUS
+.TP
+.B 0
+The command succeeded.
+.TP
+.B 1
+The command failed. A message is written to standard error.
+
+.SH EXAMPLES
+.TP
+.B xrdp\-sesadmin \-c=list
+Show the sessions and their session ids.
+.TP
+.B xrdp\-sesadmin \-c=kill:3124
+Terminate session 3124.
 
 .SH FILES
 xrdp\-sesadmin.log
