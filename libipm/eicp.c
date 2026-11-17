@@ -46,6 +46,9 @@ msgno_to_str(unsigned short n)
         (n == E_EICP_CREATE_SESSION_REQUEST) ? "EICP_CREATE_SESSION_REQUEST" :
         (n == E_EICP_CREATE_SESSION_RESPONSE) ? "EICP_CREATE_SESSION_RESPONSE" :
 
+        (n == E_EICP_LOGIN_FAILED_REQUEST) ? "EICP_LOGIN_FAILED_REQUEST" :
+        (n == E_EICP_LOGIN_FAILED_RESPONSE) ? "EICP_LOGIN_FAILED_RESPONSE" :
+
         NULL;
 }
 
@@ -387,4 +390,27 @@ eicp_get_create_session_response(struct trans *trans,
     }
 
     return rv;
+}
+
+/*****************************************************************************/
+int
+eicp_send_login_failed_request(struct trans *trans)
+{
+    return libipm_msg_out_simple_send(
+               trans, (int)E_EICP_LOGIN_FAILED_REQUEST, NULL);
+}
+
+/*****************************************************************************/
+int
+eicp_send_login_failed_response(struct trans *trans, int is_blocked)
+{
+    return libipm_msg_out_simple_send(
+               trans, (int)E_EICP_LOGIN_FAILED_RESPONSE, "b", is_blocked);
+}
+
+/*****************************************************************************/
+int
+eicp_get_login_failed_response(struct trans *trans, int *is_blocked)
+{
+    return libipm_msg_in_parse(trans, "b", is_blocked);
 }

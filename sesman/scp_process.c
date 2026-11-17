@@ -28,6 +28,8 @@
 #include <config_ac.h>
 #endif
 
+#include <time.h>
+
 #include "trans.h"
 #include "os_calls.h"
 #include "eicp.h"
@@ -35,6 +37,7 @@
 #include "scp.h"
 
 #include "display_utils.h"
+#include "login_ban.h"
 #include "scp_process.h"
 #include "sesman.h"
 #include "sesman_access.h"
@@ -85,16 +88,31 @@ process_sys_login_request(struct scp_list_item *sli)
     if (rv == 0)
     {
         enum scp_login_status errorcode;
+        struct login_ban_config ban_cfg;
+        unsigned int ban_remaining = 0;
 
         LOG(LOG_LEVEL_INFO,
             "Received system login request from %s for user: %s IP: %s",
             sli->peername, username, ip_addr);
+
+        sesman_get_login_ban_config(&ban_cfg);
 
         if (sli->login_state != E_SLI_LOGIN_NOT_LOGGED_IN)
         {
             errorcode = E_SCP_LOGIN_ALREADY_LOGGED_IN;
             LOG(LOG_LEVEL_ERROR, "Connection is already logged in for %s",
                 sli->username);
+        }
+        else if (login_ban_is_blocked(g_login_ban, &ban_cfg, ip_addr,
+                                      time(NULL), &ban_remaining))
+        {
+            /* Refuse before starting sesexec, so a blocked client
+             * can't use any more resources to try passwords */
+            errorcode = E_SCP_LOGIN_RATE_LIMITED;
+            LOG(LOG_LEVEL_WARNING,
+                "Login for user %s refused: IP %s is blocked for %u more "
+                "seconds after too many failed logins",
+                username, ip_addr, ban_remaining);
         }
         else if ((sli->username = g_strdup(username)) == NULL)
         {

@@ -256,7 +256,9 @@ struct login_info *
 login_info_sys_login_user(struct trans *scp_trans,
                           const char *username,
                           const char *password,
-                          const char *ip_addr)
+                          const char *ip_addr,
+                          login_failed_callback failed_cb,
+                          void *cb_data)
 {
     struct login_info *result;
     enum scp_login_status status = E_SCP_LOGIN_GENERAL_ERROR;
@@ -294,7 +296,18 @@ login_info_sys_login_user(struct trans *scp_trans,
                      ip_addr,
                      result);
 
-            if (status != E_SCP_LOGIN_OK)
+            /* Only count wrong passwords. A user with the right password
+             * who isn't allowed in (E_SCP_LOGIN_NOT_AUTHORIZED) is not
+             * guessing passwords */
+            if (status == E_SCP_LOGIN_NOT_AUTHENTICATED &&
+                    failed_cb != NULL && failed_cb(cb_data))
+            {
+                /* Too many failures from this IP address. Stop now,
+                 * even if retries are left */
+                status = E_SCP_LOGIN_RATE_LIMITED;
+                server_closed = 1;
+            }
+            else if (status != E_SCP_LOGIN_OK)
             {
                 if (retry_count > 0)
                 {

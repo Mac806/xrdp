@@ -269,6 +269,30 @@ to \fI0\fR, unlimited attempts are allowed. If not specified, defaults to
 \fI3\fR.
 
 .TP
+\fBMaxFailedLogins\fR=\fInumber\fR
+The number of failed password checks from one client IP address, within
+\fBFailedLoginWindow\fR seconds, after which further logins from that
+address are refused for \fBBanTime\fR seconds. Retries in the same login
+window are counted, so a client can't avoid the limit by staying
+connected. Refused logins are rejected before a password is checked.
+A successful login clears the count for the address.
+
+If set to \fI0\fR (the default), addresses are never blocked. Take care
+when many users share one address, for example behind NAT, as they are
+all blocked together.
+
+.TP
+\fBFailedLoginWindow\fR=\fIseconds\fR
+The time over which failed logins are counted for \fBMaxFailedLogins\fR.
+If not specified, defaults to \fI300\fR.
+
+.TP
+\fBBanTime\fR=\fIseconds\fR
+How long an address stays blocked. Failed logins while an address is
+blocked do not make the block longer. If not specified, defaults to
+\fI600\fR.
+
+.TP
 \fBXAuthorityInSystemDir\fR=\fI[no|yes]\fR
 If set to \fBno\fR (the default), \fBXAUTHORITY\fR will not be set for
 sessions, and the X11 authfile will be $HOME/.Xauthority.

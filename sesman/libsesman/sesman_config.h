@@ -51,6 +51,11 @@ enum SESMAN_CFG_SESS_POLICY_BITS
  */
 #define DEFAULT_SESMAN_INI XRDP_CFG_PATH "/sesman.ini"
 
+/** Default for FailedLoginWindow (seconds) */
+#define DEFAULT_FAILED_LOGIN_WINDOW 300
+/** Default for BanTime (seconds) */
+#define DEFAULT_BAN_TIME 600
+
 /**
  *
  * @struct config_security
@@ -129,6 +134,25 @@ struct config_security
      * @brief Group to have read access to the session sockdirs
      */
     char *session_sockdir_group;
+
+    /**
+     * @var max_failed_logins
+     * @brief Failed logins from one IP address before it is blocked.
+     *        0 disables blocking
+     */
+    unsigned int max_failed_logins;
+
+    /**
+     * @var failed_login_window
+     * @brief Seconds over which failed logins are counted
+     */
+    unsigned int failed_login_window;
+
+    /**
+     * @var ban_time
+     * @brief Seconds an IP address stays blocked
+     */
+    unsigned int ban_time;
 };
 
 /**

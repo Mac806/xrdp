@@ -29,10 +29,24 @@
 
 struct config_sesman;
 struct trans;
+struct login_ban;
+struct login_ban_config;
 
 /* Globals */
 extern struct config_sesman *g_cfg;
 extern tintptr g_term_event;
+extern struct login_ban *g_login_ban;
+
+/**
+ * Get the IP blocking settings from the current configuration
+ *
+ * @param[out] cfg Settings
+ *
+ * The settings are read from g_cfg each time, so that a configuration
+ * reload takes effect straight away.
+ */
+void
+sesman_get_login_ban_config(struct login_ban_config *cfg);
 
 /*
  * Remove the listening transport

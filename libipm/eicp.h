@@ -52,7 +52,12 @@ enum eicp_msg_code
     // No E_EICP_LOGOUT_RESPONSE
 
     E_EICP_CREATE_SESSION_REQUEST,
-    E_EICP_CREATE_SESSION_RESPONSE
+    E_EICP_CREATE_SESSION_RESPONSE,
+
+    /* Sent by sesexec each time a password check fails, so sesman can
+     * count failures from the client's IP address */
+    E_EICP_LOGIN_FAILED_REQUEST,
+    E_EICP_LOGIN_FAILED_RESPONSE
 };
 
 /* Common facilities */
@@ -375,5 +380,39 @@ eicp_get_create_session_response(struct trans *trans,
                                  enum scp_screate_status *status,
                                  const char **display,
                                  struct guid *guid);
+
+/**
+ * Send an E_EICP_LOGIN_FAILED_REQUEST (sesexec)
+ *
+ * @param trans EICP transport
+ * @return != 0 for error
+ *
+ * Tells sesman that a password check has failed. sesman uses the IP
+ * address it was given with the login request, not one from sesexec.
+ *
+ * sesman replies with E_EICP_LOGIN_FAILED_RESPONSE
+ */
+int
+eicp_send_login_failed_request(struct trans *trans);
+
+/**
+ * Send an E_EICP_LOGIN_FAILED_RESPONSE (sesman)
+ *
+ * @param trans EICP transport
+ * @param is_blocked true if the client's IP address is now blocked
+ * @return != 0 for error
+ */
+int
+eicp_send_login_failed_response(struct trans *trans, int is_blocked);
+
+/**
+ * Parses an incoming E_EICP_LOGIN_FAILED_RESPONSE (sesexec)
+ *
+ * @param trans EICP transport
+ * @param[out] is_blocked true if the client's IP address is now blocked
+ * @return != 0 for error
+ */
+int
+eicp_get_login_failed_response(struct trans *trans, int *is_blocked);
 
 #endif /* EICP_H */

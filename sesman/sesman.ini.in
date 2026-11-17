@@ -70,6 +70,15 @@ RestrictInboundClipboard=none
 ;    be able to connect to your sessions.
 SessionSockdirGroup=root
 #SessionSockdirGroup=xrdp
+; Block client IP addresses which fail to log in too often.
+; If an address fails MaxFailedLogins times within FailedLoginWindow
+; seconds, new logins from it are refused for BanTime seconds. Password
+; retries in the same login window are counted.
+; MaxFailedLogins=0 disables this. Be careful if many users share
+; one address (e.g. behind NAT), as they will all be blocked together.
+MaxFailedLogins=0
+FailedLoginWindow=300
+BanTime=600
 
 
 [Sessions]

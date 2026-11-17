@@ -43,11 +43,22 @@ struct login_info
 };
 
 /**
+ * Called each time a password check fails during a system login
+ *
+ * @param cb_data Data passed to login_info_sys_login_user()
+ * @return != 0 if the client's IP address is now blocked, and no
+ *         more attempts should be allowed
+ */
+typedef int (*login_failed_callback)(void *cb_data);
+
+/**
  * @brief Attempt a system login using username/password
  * @param scp_trans SCP transport for talking to the client
  * @param username Username from xrdp
  * @param password Password from xrdp
  * @param ip_addr IP address for xrdp client
+ * @param failed_cb Called after each failed password check. May be NULL
+ * @param cb_data Passed to failed_cb
  *
  * @result Allocated login_info struct for a successful login
  *
@@ -67,7 +78,9 @@ struct login_info *
 login_info_sys_login_user(struct trans *scp_trans,
                           const char *username,
                           const char *password,
-                          const char *ip_addr);
+                          const char *ip_addr,
+                          login_failed_callback failed_cb,
+                          void *cb_data);
 
 /**
  * @brief Create a login_info structure using UDS credentials

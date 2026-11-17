@@ -50,6 +50,7 @@ tap-driver.sh
 test-driver
 tests/common/test_common
 tests/libipm/test_libipm
+tests/sesman/test_sesman
 tests/libxrdp/test_libxrdp
 tests/memtest/memtest
 tests/xrdp/test_xrdp
