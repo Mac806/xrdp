@@ -41,6 +41,51 @@
 #include "session.h"
 
 /******************************************************************************/
+/**
+ * Tells sesman a password check has failed, and waits for its answer
+ *
+ * @param cb_data EICP transport to sesman
+ * @return != 0 if sesman says the client's IP address is now blocked
+ *
+ * This is called from inside the login dialog, while the
+ * E_EICP_SYS_LOGIN_REQUEST message is still being processed. That
+ * message is not needed any more, so it is cleared to make room for the
+ * reply. Clearing it also erases the password from memory.
+ */
+static int
+report_login_failure(void *cb_data)
+{
+    struct trans *self = (struct trans *)cb_data;
+    int is_blocked = 0;
+
+    eicp_msg_in_reset(self);
+
+    if (eicp_send_login_failed_request(self) != 0)
+    {
+        LOG(LOG_LEVEL_ERROR, "Can't report failed login to sesman");
+    }
+    else if (eicp_msg_in_wait_available(self) != 0)
+    {
+        LOG(LOG_LEVEL_ERROR, "No answer from sesman for failed login");
+    }
+    else if (eicp_msg_in_get_msgno(self) != E_EICP_LOGIN_FAILED_RESPONSE)
+    {
+        char buff[64];
+        eicp_msgno_to_str(eicp_msg_in_get_msgno(self), buff, sizeof(buff));
+        LOG(LOG_LEVEL_ERROR, "Unexpected message %s from sesman", buff);
+    }
+    else if (eicp_get_login_failed_response(self, &is_blocked) != 0)
+    {
+        LOG(LOG_LEVEL_ERROR, "Can't parse failed login reply from sesman");
+        is_blocked = 0;
+    }
+
+    eicp_msg_in_reset(self);
+
+    return is_blocked;
+}
+
+/******************************************************************************/
 static int
 handle_sys_login_request(struct trans *self)
 {
@@ -72,7 +117,8 @@ handle_sys_login_request(struct trans *self)
                 login_info_free(g_login_info);
             }
             g_login_info = login_info_sys_login_user(scp_trans, username,
-                           password, ip_addr);
+                           password, ip_addr,
+                           report_login_failure, self);
 
             if (g_login_info != NULL)
             {

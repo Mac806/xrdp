@@ -51,6 +51,8 @@ EXTRA_libsesman_la_SOURCES = \
 libsesman_la_DEPENDENCIES = $(AUTHMOD_OBJ)
 
 libsesman_la_SOURCES = \
+  login_ban.h \
+  login_ban.c \
   sesman_access.h \
   sesman_access.c \
   sesman_auth.h \

@@ -42,6 +42,7 @@ scp_login_status_to_str(enum scp_login_status n,
         (n == E_SCP_LOGIN_NOT_AUTHENTICATED) ? "User does not exist, or could not be authenticated" :
         (n == E_SCP_LOGIN_NOT_AUTHORIZED) ? "User is not authorized" :
         (n == E_SCP_LOGIN_GENERAL_ERROR) ? "General login error" :
+        (n == E_SCP_LOGIN_RATE_LIMITED) ? "Too many failed logins. Try again later" :
         /* Default */ NULL;
 
     if (str == NULL)

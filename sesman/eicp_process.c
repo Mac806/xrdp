@@ -28,6 +28,8 @@
 #include <config_ac.h>
 #endif
 
+#include <time.h>
+
 #include "trans.h"
 
 #include "eicp.h"
@@ -42,6 +44,7 @@
 #include "sesman_config.h"
 #include "string_calls.h"
 #include "guid.h"
+#include "login_ban.h"
 
 /******************************************************************************/
 
@@ -81,6 +84,9 @@ process_sys_login_response(struct scp_list_item *sli)
             }
             else
             {
+                /* A successful login clears the failure count */
+                login_ban_record_success(g_login_ban, sli->start_ip_addr);
+
                 sli->client_trans->trans_data_in = sesman_scp_data_in;
                 sli->client_trans->callback_data = (void *)sli;
                 sli->login_state = E_SLI_LOGIN_SYS;
@@ -151,6 +157,29 @@ process_create_session_response(struct scp_list_item *sli)
     return rv;
 }
 /******************************************************************************/
+static int
+process_login_failed_request(struct scp_list_item *sli)
+{
+    struct login_ban_config ban_cfg;
+    int is_blocked;
+
+    sesman_get_login_ban_config(&ban_cfg);
+
+    /* Use the IP address sesman stored when the login started. This
+     * comes from xrdp, and doesn't depend on anything sesexec says */
+    is_blocked = login_ban_record_failure(g_login_ban, &ban_cfg,
+                                          sli->start_ip_addr, time(NULL));
+    if (is_blocked)
+    {
+        LOG(LOG_LEVEL_WARNING,
+            "IP %s is blocked for %u seconds after %u failed logins",
+            sli->start_ip_addr, ban_cfg.ban_time, ban_cfg.max_failures);
+    }
+
+    return eicp_send_login_failed_response(sli->sesexec_trans, is_blocked);
+}
+
+/******************************************************************************/
 int
 eicp_process(struct scp_list_item *sli)
 {
@@ -165,6 +194,10 @@ eicp_process(struct scp_list_item *sli)
 
         case E_EICP_CREATE_SESSION_RESPONSE:
             rv = process_create_session_response(sli);
+            break;
+
+        case E_EICP_LOGIN_FAILED_REQUEST:
+            rv = process_login_failed_request(sli);
             break;
 
         default:

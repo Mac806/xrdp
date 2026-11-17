@@ -80,7 +80,11 @@ enum scp_login_status
      * User couldn't be authenticated, or user doesn't exist */
     E_SCP_LOGIN_NOT_AUTHENTICATED,
     E_SCP_LOGIN_NOT_AUTHORIZED, ///< User is authenticated, but not authorized
-    E_SCP_LOGIN_GENERAL_ERROR ///< An unspecific error has occurred
+    E_SCP_LOGIN_GENERAL_ERROR, ///< An unspecific error has occurred
+    /**
+     * Too many failed logins from the client's IP address. Logins from
+     * this address are refused for a while */
+    E_SCP_LOGIN_RATE_LIMITED
 };
 
 /**

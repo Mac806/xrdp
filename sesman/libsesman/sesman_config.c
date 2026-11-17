@@ -75,6 +75,9 @@
 #define SESMAN_CFG_SEC_PASS_SHELL_AS_ENV           "PassShellAsEnv"
 #define SESMAN_CFG_SEC_XORG_NO_NEW_PRIVILEGES      "XorgNoNewPrivileges"
 #define SESMAN_CFG_SEC_SESSION_SOCKDIR_GROUP       "SessionSockdirGroup"
+#define SESMAN_CFG_SEC_MAX_FAILED_LOGINS          "MaxFailedLogins"
+#define SESMAN_CFG_SEC_FAILED_LOGIN_WINDOW        "FailedLoginWindow"
+#define SESMAN_CFG_SEC_BAN_TIME                   "BanTime"
 
 #define SESMAN_CFG_SESSIONS          "Sessions"
 #define SESMAN_CFG_SESS_MAX          "MaxSessions"
@@ -294,6 +297,28 @@ config_read_globals(int file, struct config_sesman *cf, struct list *param_n,
 
 /***************************************************************************//**
  *
+ * @brief Reads a whole number which can't be negative
+ * @param name Name of the setting (for logging)
+ * @param value Value from the file
+ * @param def Value to use if value is not valid
+ * @return Value to use
+ *
+ */
+static unsigned int
+read_non_negative(const char *name, const char *value, unsigned int def)
+{
+    int i = g_atoi(value);
+    if (i < 0)
+    {
+        LOG(LOG_LEVEL_WARNING, "Invalid value '%s' for %s - using %u",
+            value, name, def);
+        return def;
+    }
+    return (unsigned int)i;
+}
+
+/***************************************************************************//**
+ *
  * @brief Reads sesman [Security] configuration section
  * @param file configuration file descriptor
  * @param sc pointer to a config_security struct
@@ -326,6 +351,9 @@ config_read_security(int file, struct config_security *sc,
     sc->ts_users = g_strdup("");
     sc->ts_admins = g_strdup("");
     sc->session_sockdir_group = g_strdup("");
+    sc->max_failed_logins = 0;
+    sc->failed_login_window = DEFAULT_FAILED_LOGIN_WINDOW;
+    sc->ban_time = DEFAULT_BAN_TIME;
 
     file_read_section(file, SESMAN_CFG_SECURITY, param_n, param_v);
 
@@ -408,6 +436,29 @@ config_read_security(int file, struct config_security *sc,
             g_free(sc->session_sockdir_group);
             sc->session_sockdir_group = g_strdup(value);
         }
+        else if (0 == g_strcasecmp(buf, SESMAN_CFG_SEC_MAX_FAILED_LOGINS))
+        {
+            sc->max_failed_logins = read_non_negative(buf, value, 0);
+        }
+        else if (0 == g_strcasecmp(buf, SESMAN_CFG_SEC_FAILED_LOGIN_WINDOW))
+        {
+            sc->failed_login_window =
+                read_non_negative(buf, value, DEFAULT_FAILED_LOGIN_WINDOW);
+        }
+        else if (0 == g_strcasecmp(buf, SESMAN_CFG_SEC_BAN_TIME))
+        {
+            sc->ban_time = read_non_negative(buf, value, DEFAULT_BAN_TIME);
+        }
+    }
+
+    /* A zero window or ban time would make the feature do nothing */
+    if (sc->failed_login_window == 0)
+    {
+        sc->failed_login_window = DEFAULT_FAILED_LOGIN_WINDOW;
+    }
+    if (sc->ban_time == 0)
+    {
+        sc->ban_time = DEFAULT_BAN_TIME;
     }
 
     return 0;
@@ -714,6 +765,9 @@ config_dump(struct config_sesman *config)
     g_writeln("    AlwaysGroupCheck:          %d", sc->ts_always_group_check);
     g_writeln("    AllowAlternateShell:       %d", sc->allow_alternate_shell);
     g_writeln("    PassShellAsEnv:            %s", sc->pass_shell_as_env);
+    g_writeln("    MaxFailedLogins:           %u", sc->max_failed_logins);
+    g_writeln("    FailedLoginWindow:         %u", sc->failed_login_window);
+    g_writeln("    BanTime:                   %u", sc->ban_time);
 #ifdef HAVE_SYS_PRCTL_H
     g_writeln("    XorgNoNewPrivileges:       %d", sc->xorg_no_new_privileges);
 #endif

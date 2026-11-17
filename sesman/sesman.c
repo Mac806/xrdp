@@ -42,6 +42,7 @@
 #include "scp_list.h"
 #include "session_list.h"
 #include "lock_uds.h"
+#include "login_ban.h"
 #include "os_calls.h"
 #include "scp.h"
 #include "scp_process.h"
@@ -79,6 +80,7 @@ struct sesman_startup_params
 };
 
 struct config_sesman *g_cfg;
+struct login_ban *g_login_ban = NULL;
 tintptr g_term_event = 0;
 static tintptr g_sigchld_event = 0;
 static tintptr g_reload_event = 0;
@@ -221,6 +223,8 @@ sesman_close_all(void)
 
     scp_list_cleanup();
     session_list_cleanup();
+    login_ban_delete(g_login_ban);
+    g_login_ban = NULL;
 
     g_delete_wait_obj(g_reload_event);
     g_delete_wait_obj(g_sigchld_event);
@@ -946,9 +950,14 @@ main(int argc, char **argv)
         }
     }
 
-    if ((error = scp_list_init(MAX_SCP_LIST_ITEMS)) == 0 &&
-            (error = session_list_init()) == 0 &&
-            (error = sesman_restart_discover_sessions()) == 0)
+    if ((g_login_ban = login_ban_create(0)) == NULL)
+    {
+        LOG(LOG_LEVEL_ERROR, "Can't create failed login table");
+        error = 1;
+    }
+    else if ((error = scp_list_init(MAX_SCP_LIST_ITEMS)) == 0 &&
+             (error = session_list_init()) == 0 &&
+             (error = sesman_restart_discover_sessions()) == 0)
     {
         error = sesman_main_loop();
     }
@@ -967,4 +976,13 @@ main(int argc, char **argv)
     g_deinit();
     g_exit(error);
     return 0;
+}
+
+/******************************************************************************/
+void
+sesman_get_login_ban_config(struct login_ban_config *cfg)
+{
+    cfg->max_failures = g_cfg->sec.max_failed_logins;
+    cfg->window = g_cfg->sec.failed_login_window;
+    cfg->ban_time = g_cfg->sec.ban_time;
 }
