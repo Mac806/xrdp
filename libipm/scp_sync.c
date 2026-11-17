@@ -208,3 +208,22 @@ scp_sync_create_sockdir_request(struct trans *t)
     }
     return rv;
 }
+
+/*****************************************************************************/
+int
+scp_sync_kill_session_request(struct trans *t, int sid,
+                              enum scp_kill_session_status *status)
+{
+    int rv = scp_send_kill_session_request(t, sid);
+    if (rv == 0)
+    {
+        rv = scp_sync_wait_specific(t, E_SCP_KILL_SESSION_RESPONSE);
+        if (rv == 0)
+        {
+            rv = scp_get_kill_session_response(t, status);
+            scp_msg_in_reset(t); // Done with this message
+        }
+    }
+
+    return rv;
+}

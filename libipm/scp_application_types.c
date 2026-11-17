@@ -113,3 +113,28 @@ scp_sconnect_status_to_str(enum scp_sconnect_status n,
 
     return buff;
 }
+
+/*****************************************************************************/
+const char *
+scp_kill_session_status_to_str(enum scp_kill_session_status n,
+                               char *buff, unsigned int buff_size)
+{
+    const char *str =
+        (n == E_SCP_KS_OK) ? "OK" :
+        (n == E_SCP_KS_NOT_LOGGED_IN) ? "Connection is not logged in" :
+        (n == E_SCP_KS_NO_SUCH_SESSION) ? "No such session for this user" :
+        (n == E_SCP_KS_BAD_SID) ? "Invalid session ID" :
+        (n == E_SCP_KS_SIGNAL_FAILED) ? "Can't send a signal to the session" :
+        /* Default */ NULL;
+
+    if (str == NULL)
+    {
+        g_snprintf(buff, buff_size, "[kill session error code #%d]", (int)n);
+    }
+    else
+    {
+        g_snprintf(buff, buff_size, "%s", str);
+    }
+
+    return buff;
+}

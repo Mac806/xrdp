@@ -407,6 +407,30 @@ session_list_get_byguid(const struct guid *guid)
 }
 
 /******************************************************************************/
+struct session_item *
+session_list_get_bysid(pid_t sid)
+{
+    int i;
+
+    if (sid <= 0)
+    {
+        return NULL;
+    }
+
+    for (i = 0 ; i < g_session_list->count ; ++i)
+    {
+        struct session_item *si;
+        si = (struct session_item *)list_get_item(g_session_list, i);
+        if (SESSION_IN_USE(si) && si->sesexec_pid == sid)
+        {
+            return si;
+        }
+    }
+
+    return NULL;
+}
+
+/******************************************************************************/
 void
 free_session_info_list(struct scp_session_info *sesslist, unsigned int cnt)
 {

@@ -98,4 +98,20 @@ scp_sync_list_sessions_request(struct trans *t);
 int
 scp_sync_create_sockdir_request(struct trans *t);
 
+/**
+ * Send a kill session request to sesman and wait for the answer
+ *
+ * @param t SCP transport
+ * @param sid Session ID to terminate
+ * @param[out] status Status returned by sesman
+ * @return 0 if a response was received from sesman. In this case,
+ *         status contains the result of the request
+ *
+ * The connection is not closed by this call, so other requests
+ * can follow it.
+ */
+int
+scp_sync_kill_session_request(struct trans *t, int sid,
+                              enum scp_kill_session_status *status);
+
 #endif /* SCP_SYNC_H */

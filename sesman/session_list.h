@@ -171,6 +171,16 @@ struct session_item *
 session_list_get_byguid(const struct guid *guid);
 
 /**
+ * Finds an active session by its session ID
+ *
+ * @param sid Session ID, as returned to SCP clients in a session list.
+ *            This is the PID of the sesexec process for the session.
+ * @return Session, or NULL if no active session has this ID
+ */
+struct session_item *
+session_list_get_bysid(pid_t sid);
+
+/**
  *
  * @brief Frees the result of session_get_byuser()
  * @param sesslist Resuit of session_get_byuser()

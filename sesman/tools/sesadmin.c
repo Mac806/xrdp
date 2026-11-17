@@ -30,7 +30,10 @@
 #include "scp.h"
 #include "scp_sync.h"
 
+#include <errno.h>
+#include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 
@@ -38,8 +41,9 @@ char cmnd[257];
 char port[257];
 
 static int cmndList(struct trans *t);
-static int cmndKill(struct trans *t);
+static int cmndKill(struct trans *t, const char *sid_str);
 static void cmndHelp(void);
+static int parse_sid(const char *str, int *sid);
 
 
 int main(int argc, char **argv)
@@ -84,6 +88,26 @@ int main(int argc, char **argv)
         return 0;
     }
 
+    /* Check the command before connecting to sesman, so that
+     * mistakes are reported straight away */
+    if (0 != g_strcmp(cmnd, "list") && 0 != g_strncmp(cmnd, "kill:", 5))
+    {
+        fprintf(stderr, "Unknown command '%s'\n\n", cmnd);
+        cmndHelp();
+        return 1;
+    }
+
+    if (0 == g_strncmp(cmnd, "kill:", 5))
+    {
+        int sid;
+        if (parse_sid(cmnd + 5, &sid) != 0)
+        {
+            fprintf(stderr, "Invalid session ID '%s'. "
+                    "Use 'list' to see the session IDs\n", cmnd + 5);
+            return 1;
+        }
+    }
+
     t = scp_connect(port, "xrdp-sesadmin", NULL);
 
     if (t == NULL)
@@ -98,13 +122,13 @@ int main(int argc, char **argv)
 
     if (rv == 0)
     {
-        if (0 == g_strncmp(cmnd, "list", 5))
+        if (0 == g_strcmp(cmnd, "list"))
         {
             rv = cmndList(t);
         }
         else if (0 == g_strncmp(cmnd, "kill:", 5))
         {
-            rv = cmndKill(t);
+            rv = cmndKill(t, cmnd + 5);
         }
     }
 
@@ -192,16 +216,74 @@ cmndList(struct trans *t)
                 print_session((struct scp_session_info *)sessions->items[i]);
             }
         }
-        (void)scp_send_close_connection_request(t);
         list_delete(sessions);
+        rv = 0;
     }
 
     return rv;
 }
 
+/**
+ * Parses a session ID given on the command line
+ *
+ * @param str String to parse
+ * @param[out] sid Session ID
+ * @return 0 if str is a whole positive number which fits in an int
+ */
 static int
-cmndKill(struct trans *t)
+parse_sid(const char *str, int *sid)
 {
-    fprintf(stderr, "not yet implemented\n");
-    return 1;
+    char *end = NULL;
+    long val;
+
+    /* strtol() accepts leading spaces and signs. We don't */
+    if (str == NULL || str[0] < '0' || str[0] > '9')
+    {
+        return 1;
+    }
+
+    errno = 0;
+    val = strtol(str, &end, 10);
+    if (errno != 0 || end == str || *end != '\0' ||
+            val <= 0 || val > INT_MAX)
+    {
+        return 1;
+    }
+
+    *sid = (int)val;
+    return 0;
+}
+
+static int
+cmndKill(struct trans *t, const char *sid_str)
+{
+    int rv;
+    int sid;
+    enum scp_kill_session_status status;
+
+    if (parse_sid(sid_str, &sid) != 0)
+    {
+        /* Already checked in main(), but check again to be safe */
+        fprintf(stderr, "Invalid session ID '%s'\n", sid_str);
+        return 1;
+    }
+
+    rv = scp_sync_kill_session_request(t, sid, &status);
+    if (rv != 0)
+    {
+        fprintf(stderr, "No response from sesman\n");
+    }
+    else if (status != E_SCP_KS_OK)
+    {
+        char msg[64];
+        scp_kill_session_status_to_str(status, msg, sizeof(msg));
+        fprintf(stderr, "Can't kill session %d: %s\n", sid, msg);
+        rv = 1;
+    }
+    else
+    {
+        printf("Session %d is being terminated\n", sid);
+    }
+
+    return rv;
 }
