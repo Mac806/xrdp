@@ -63,6 +63,9 @@ msgno_to_str(unsigned short n)
 
         (n == E_SCP_KILL_SESSION_REQUEST) ? "SCP_KILL_SESSION_REQUEST" :
         (n == E_SCP_KILL_SESSION_RESPONSE) ? "SCP_KILL_SESSION_RESPONSE" :
+
+        (n == E_SCP_AUDIT_HISTORY_REQUEST) ? "SCP_AUDIT_HISTORY_REQUEST" :
+        (n == E_SCP_AUDIT_HISTORY_RESPONSE) ? "SCP_AUDIT_HISTORY_RESPONSE" :
         NULL;
 }
 
@@ -979,6 +982,68 @@ scp_get_kill_session_response(struct trans *trans,
     if (rv == 0)
     {
         *status = (enum scp_kill_session_status)i_status;
+    }
+
+    return rv;
+}
+
+/*****************************************************************************/
+
+int
+scp_send_audit_history_request(struct trans *trans, int count)
+{
+    return libipm_msg_out_simple_send(
+               trans,
+               (int)E_SCP_AUDIT_HISTORY_REQUEST,
+               "i", count);
+}
+
+/*****************************************************************************/
+
+int
+scp_get_audit_history_request(struct trans *trans, int *count)
+{
+    int32_t i_count = 0;
+    int rv = libipm_msg_in_parse(trans, "i", &i_count);
+    if (rv == 0)
+    {
+        *count = (int)i_count;
+    }
+
+    return rv;
+}
+
+/*****************************************************************************/
+
+int
+scp_send_audit_history_response(struct trans *trans,
+                                enum scp_audit_history_status status,
+                                const char *line)
+{
+    if (status != E_SCP_AH_RECORD || line == NULL)
+    {
+        line = "";
+    }
+    return libipm_msg_out_simple_send(
+               trans,
+               (int)E_SCP_AUDIT_HISTORY_RESPONSE,
+               "is", status, line);
+}
+
+/*****************************************************************************/
+
+int
+scp_get_audit_history_response(struct trans *trans,
+                               enum scp_audit_history_status *status,
+                               const char **line)
+{
+    int32_t i_status = 0;
+    char *msg_line = NULL;
+    int rv = libipm_msg_in_parse(trans, "is", &i_status, &msg_line);
+    if (rv == 0)
+    {
+        *status = (enum scp_audit_history_status)i_status;
+        *line = msg_line;
     }
 
     return rv;

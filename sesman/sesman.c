@@ -29,6 +29,7 @@
 #endif
 
 #include <stdarg.h>
+#include <time.h>
 
 #include "arch.h"
 #include "sesman.h"
@@ -43,6 +44,7 @@
 #include "session_list.h"
 #include "lock_uds.h"
 #include "login_ban.h"
+#include "session_audit.h"
 #include "os_calls.h"
 #include "scp.h"
 #include "scp_process.h"
@@ -985,4 +987,48 @@ sesman_get_login_ban_config(struct login_ban_config *cfg)
     cfg->max_failures = g_cfg->sec.max_failed_logins;
     cfg->window = g_cfg->sec.failed_login_window;
     cfg->ban_time = g_cfg->sec.ban_time;
+}
+
+/******************************************************************************/
+void
+sesman_audit_session(int event, const struct session_item *si,
+                     const char *ip, const char *client, const char *actor)
+{
+    struct session_audit_record rec = {0};
+    char *username = NULL;
+
+    if (g_cfg->audit_log == NULL || g_cfg->audit_log[0] == '\0' ||
+            si == NULL)
+    {
+        return;
+    }
+
+    /* Errors are ignored - username stays NULL, which is logged as "-" */
+    (void)g_getuser_info_by_uid(si->uid, &username, NULL, NULL, NULL, NULL);
+
+    rec.event = (enum session_audit_event)event;
+    rec.time = time(NULL);
+    rec.sid = si->sesexec_pid;
+    rec.user = username;
+    rec.ip = ip;
+    rec.display = si->display;
+    rec.client = client;
+    rec.actor = actor;
+
+    (void)session_audit_write(g_cfg->audit_log, &rec);
+    g_free(username);
+}
+
+/******************************************************************************/
+void
+sesman_audit_ip_blocked(const char *ip, const char *username)
+{
+    struct session_audit_record rec = {0};
+
+    rec.event = SA_IP_BLOCKED;
+    rec.time = time(NULL);
+    rec.ip = ip;
+    rec.user = username;
+
+    (void)session_audit_write(g_cfg->audit_log, &rec);
 }

@@ -31,6 +31,7 @@ struct config_sesman;
 struct trans;
 struct login_ban;
 struct login_ban_config;
+struct session_item;
 
 /* Globals */
 extern struct config_sesman *g_cfg;
@@ -47,6 +48,28 @@ extern struct login_ban *g_login_ban;
  */
 void
 sesman_get_login_ban_config(struct login_ban_config *cfg);
+
+/**
+ * Write a session event to the audit log (if enabled)
+ *
+ * @param event Event (an enum session_audit_event)
+ * @param si Session
+ * @param ip IP address to record (may be NULL)
+ * @param client Client name to record (may be NULL)
+ * @param actor User who caused the event (may be NULL)
+ */
+void
+sesman_audit_session(int event, const struct session_item *si,
+                     const char *ip, const char *client, const char *actor);
+
+/**
+ * Write a blocked IP address to the audit log (if enabled)
+ *
+ * @param ip Blocked IP address
+ * @param username User name used in the last failed login
+ */
+void
+sesman_audit_ip_blocked(const char *ip, const char *username);
 
 /*
  * Remove the listening transport

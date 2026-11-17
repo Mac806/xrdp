@@ -34,6 +34,8 @@
 
 #include "ercp.h"
 #include "ercp_process.h"
+#include "sesman.h"
+#include "session_audit.h"
 #include "session_list.h"
 #include "string_calls.h"
 
@@ -70,6 +72,11 @@ process_session_announce_event(struct session_item *si)
 
         LOG(LOG_LEVEL_INFO,
             "sesman: Session on display %s is now running", si->display);
+
+        /* A session found after a sesman restart isn't new */
+        sesman_audit_session(si->recovering ? SA_SESSION_RESTORED :
+                             SA_SESSION_START,
+                             si, si->start_ip_addr, NULL, NULL);
     }
 
     return rv;
@@ -104,6 +111,17 @@ process_client_connect_event(struct session_item *si)
         LOG(LOG_LEVEL_INFO,
             "sesman: Session on display %s is connected from client '%s'",
             si->display, si->client_name);
+
+        if (si->recovering)
+        {
+            /* Replayed after a sesman restart - not a new connection */
+            si->recovering = 0;
+        }
+        else
+        {
+            sesman_audit_session(SA_CLIENT_CONNECT, si, si->client_ip,
+                                 si->client_name, NULL);
+        }
     }
 
     return rv;
@@ -119,6 +137,18 @@ process_client_disconnect_event(struct session_item *si)
     rv = ercp_get_client_disconnect_event(si->sesexec_trans, &disconnect_time);
     if (rv == 0)
     {
+        if (si->recovering)
+        {
+            /* Replayed after a sesman restart - not a new disconnection */
+            si->recovering = 0;
+        }
+        else
+        {
+            /* Record the client before its details are cleared */
+            sesman_audit_session(SA_CLIENT_DISCONNECT, si, si->client_ip,
+                                 si->client_name, NULL);
+        }
+
         si->client_ip[0] = '\0';
         si->client_name[0] = '\0';
         si->last_connect_disconnect = disconnect_time;

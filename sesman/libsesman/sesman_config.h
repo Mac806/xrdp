@@ -297,6 +297,12 @@ struct config_sesman
     * @brief environment variable value list
     */
     struct list *env_values;
+
+    /**
+     * @var audit_log
+     * @brief Path of the session audit log. "" disables the audit log
+     */
+    char *audit_log;
 };
 
 /**

@@ -174,6 +174,7 @@ process_login_failed_request(struct scp_list_item *sli)
         LOG(LOG_LEVEL_WARNING,
             "IP %s is blocked for %u seconds after %u failed logins",
             sli->start_ip_addr, ban_cfg.ban_time, ban_cfg.max_failures);
+        sesman_audit_ip_blocked(sli->start_ip_addr, sli->username);
     }
 
     return eicp_send_login_failed_response(sli->sesexec_trans, is_blocked);

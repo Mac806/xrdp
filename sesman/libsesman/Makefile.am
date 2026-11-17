@@ -58,6 +58,8 @@ libsesman_la_SOURCES = \
   sesman_auth.h \
   sesman_config.h \
   sesman_config.c \
+  session_audit.h \
+  session_audit.c \
   sesman_clip_restrict.h \
   sesman_clip_restrict.c
 

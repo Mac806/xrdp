@@ -546,6 +546,34 @@ Sets the duration(msec). Sound data is not send to client during \fInumber\fR
 millisecond(s) after close message is sent, when AAC/MP3 is selected.
 If set to 0, all the data is sent. If not specified, defaults to \fI1000\fR.
 
+.SH "AUDIT"
+The following parameters can be used in the \fB[Audit]\fR section.
+
+.TP
+\fBAuditLog\fR=\fIpath\fR
+Full path of the session audit log. One line is added for each of these
+events: a session starts (\fBSESSION_START\fR), a running session is
+found again after \fBxrdp\-sesman\fR restarts (\fBSESSION_RESTORED\fR),
+a session ends (\fBSESSION_FINISH\fR), an RDP client connects or
+disconnects (\fBCLIENT_CONNECT\fR, \fBCLIENT_DISCONNECT\fR), a session
+is killed with \fBxrdp\-sesadmin\fR (\fBSESSION_KILL\fR), and an IP
+address is blocked after failed logins (\fBIP_BLOCKED\fR).
+
+Each line is a list of \fIkey\fR=\fIvalue\fR fields:
+\fBtime\fR (UTC), \fBevent\fR, \fBsid\fR, \fBuser\fR, \fBip\fR,
+\fBdisplay\fR, \fBclient\fR and \fBactor\fR (the user who killed a
+session). A missing value is written as \fB-\fR. Spaces, control
+characters, \fB=\fR and \fB\e\fR in values are written as
+\fB\exHH\fR, so a value can't add a field or a line.
+
+The file is created with permissions 0600. It is opened for each line,
+so it can be rotated with \fBlogrotate\fR(8). Members of the
+\fBTerminalServerAdmins\fR group can show the last lines with
+\fBxrdp\-sesadmin \-c=history\fR. If the file can't be written, an
+error is logged and sessions carry on as normal.
+
+If empty, no audit log is written. A relative path is not allowed.
+
 .SH "SESSIONS VARIABLES"
 All entries in the \fB[SessionVariables]\fR section are set as
 environment variables in the user's session.

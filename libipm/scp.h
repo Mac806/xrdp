@@ -71,7 +71,10 @@ enum scp_msg_code
     /* New messages are added at the end, so the numbers of the
      * existing messages don't change */
     E_SCP_KILL_SESSION_REQUEST,
-    E_SCP_KILL_SESSION_RESPONSE
+    E_SCP_KILL_SESSION_RESPONSE,
+
+    E_SCP_AUDIT_HISTORY_REQUEST,
+    E_SCP_AUDIT_HISTORY_RESPONSE
 };
 
 /* Common facilities */
@@ -643,5 +646,60 @@ int
 scp_get_kill_session_response(struct trans *trans,
                               enum scp_kill_session_status *status);
 
+
+/**
+ * Send an E_SCP_AUDIT_HISTORY_REQUEST (SCP client)
+ *
+ * @param trans SCP transport
+ * @param count Number of lines wanted from the end of the audit log
+ * @return != 0 for error
+ *
+ * Only administrators can read the audit log.
+ *
+ * Server replies with one or more E_SCP_AUDIT_HISTORY_RESPONSE messages.
+ * Each line is sent with the status E_SCP_AH_RECORD, oldest first, and
+ * the last message has the status E_SCP_AH_END_OF_LIST. An error is sent
+ * as a single message with an error status.
+ */
+int
+scp_send_audit_history_request(struct trans *trans, int count);
+
+/**
+ * Parse an incoming E_SCP_AUDIT_HISTORY_REQUEST (SCP server)
+ *
+ * @param trans SCP transport
+ * @param[out] count Number of lines wanted
+ * @return != 0 for error
+ */
+int
+scp_get_audit_history_request(struct trans *trans, int *count);
+
+/**
+ * Send an E_SCP_AUDIT_HISTORY_RESPONSE (SCP server)
+ *
+ * @param trans SCP transport
+ * @param status Status of request
+ * @param line Line of the audit log, if status is E_SCP_AH_RECORD.
+ *             Otherwise ignored.
+ * @return != 0 for error
+ */
+int
+scp_send_audit_history_response(struct trans *trans,
+                                enum scp_audit_history_status status,
+                                const char *line);
+
+/**
+ * Parse an incoming E_SCP_AUDIT_HISTORY_RESPONSE (SCP client)
+ *
+ * @param trans SCP transport
+ * @param[out] status Status of request
+ * @param[out] line Line of the audit log, if status is E_SCP_AH_RECORD.
+ *             The line is valid until the message is reset.
+ * @return != 0 for error
+ */
+int
+scp_get_audit_history_response(struct trans *trans,
+                               enum scp_audit_history_status *status,
+                               const char **line);
 
 #endif /* SCP_H */

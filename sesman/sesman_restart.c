@@ -151,6 +151,7 @@ add_sesexec_fd_to_session_list(const char *filename)
                         s_item->sesexec_trans = t;
                         s_item->sesexec_pid = sesexec_pid;
                         s_item->display[0] = '\0';
+                        s_item->recovering = 1;
 
                         // Tell the caller we've added one
                         status = 1;

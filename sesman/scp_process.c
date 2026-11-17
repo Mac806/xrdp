@@ -37,7 +37,9 @@
 #include "scp.h"
 
 #include "display_utils.h"
+#include "list.h"
 #include "login_ban.h"
+#include "session_audit.h"
 #include "scp_process.h"
 #include "sesman.h"
 #include "sesman_access.h"
@@ -807,11 +809,79 @@ process_kill_session_request(struct scp_list_item *sli)
             LOG(LOG_LEVEL_INFO, "Session %d (display %s) terminated by %s%s",
                 sid, si->display, sli->username,
                 sli->is_admin ? " (admin)" : "");
+            sesman_audit_session(SA_SESSION_KILL, si, si->start_ip_addr,
+                                 NULL, sli->username);
             status = E_SCP_KS_OK;
         }
     }
 
     return scp_send_kill_session_response(sli->client_trans, status);
+}
+
+/******************************************************************************/
+
+static int
+process_audit_history_request(struct scp_list_item *sli)
+{
+    int count = 0;
+    enum scp_audit_history_status status = E_SCP_AH_READ_ERROR;
+    struct list *lines = NULL;
+    int rv = scp_get_audit_history_request(sli->client_trans, &count);
+
+    if (rv != 0)
+    {
+        LOG(LOG_LEVEL_ERROR, "Can't parse audit history request from %s",
+            sli->peername);
+        return rv;
+    }
+
+    if (sli->login_state == E_SLI_LOGIN_NOT_LOGGED_IN)
+    {
+        status = E_SCP_AH_NOT_LOGGED_IN;
+    }
+    else if (!sli->is_admin)
+    {
+        /* The log contains every user's logins and IP addresses */
+        LOG(LOG_LEVEL_WARNING,
+            "Non-admin user %s asked to read the audit log",
+            sli->username);
+        status = E_SCP_AH_NOT_ADMIN;
+    }
+    else if (count < 1 || count > SESSION_AUDIT_MAX_HISTORY)
+    {
+        status = E_SCP_AH_BAD_COUNT;
+    }
+    else if (g_cfg->audit_log == NULL || g_cfg->audit_log[0] == '\0')
+    {
+        status = E_SCP_AH_DISABLED;
+    }
+    else if ((lines = session_audit_read_last(g_cfg->audit_log,
+                      (unsigned int)count)) == NULL)
+    {
+        status = E_SCP_AH_READ_ERROR;
+    }
+    else
+    {
+        int i;
+
+        LOG(LOG_LEVEL_INFO, "Sending last %d audit log lines to %s",
+            count, sli->username);
+        for (i = 0; rv == 0 && i < lines->count; ++i)
+        {
+            rv = scp_send_audit_history_response(
+                     sli->client_trans, E_SCP_AH_RECORD,
+                     (const char *)lines->items[i]);
+        }
+        list_delete(lines);
+        status = E_SCP_AH_END_OF_LIST;
+    }
+
+    if (rv == 0)
+    {
+        rv = scp_send_audit_history_response(sli->client_trans, status, NULL);
+    }
+
+    return rv;
 }
 
 /******************************************************************************/
@@ -883,6 +953,10 @@ scp_process(struct scp_list_item *sli)
 
         case E_SCP_KILL_SESSION_REQUEST:
             rv = process_kill_session_request(sli);
+            break;
+
+        case E_SCP_AUDIT_HISTORY_REQUEST:
+            rv = process_audit_history_request(sli);
             break;
 
         default:

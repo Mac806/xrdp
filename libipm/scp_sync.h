@@ -114,4 +114,19 @@ int
 scp_sync_kill_session_request(struct trans *t, int sid,
                               enum scp_kill_session_status *status);
 
+/**
+ * Ask sesman for the last lines of the audit log, and wait for them
+ *
+ * @param t SCP transport
+ * @param count Number of lines wanted
+ * @param[out] status Final status returned by sesman.
+ *             E_SCP_AH_END_OF_LIST means all lines were received.
+ * @return List of lines (char *), oldest first, or NULL if there was
+ *         an error talking to sesman. The caller must call list_delete()
+ *         on the result. If status is an error, the list is empty.
+ */
+struct list *
+scp_sync_audit_history_request(struct trans *t, int count,
+                               enum scp_audit_history_status *status);
+
 #endif /* SCP_SYNC_H */

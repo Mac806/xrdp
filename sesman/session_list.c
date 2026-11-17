@@ -42,6 +42,7 @@
 #include "log.h"
 #include "os_calls.h"
 #include "sesman.h"
+#include "session_audit.h"
 #include "set_int.h"
 #include "string_calls.h"
 #include "xrdp_sockets.h"
@@ -495,6 +496,13 @@ session_list_check_wait_objs(void)
         }
         else
         {
+            /* Only sessions which really started are audited. This also
+             * covers a session whose sesexec ended without telling us */
+            if (si->state == E_SESSION_RUNNING)
+            {
+                sesman_audit_session(SA_SESSION_FINISH, si,
+                                     si->start_ip_addr, NULL, NULL);
+            }
             free_session(si);
             list_remove_item(g_session_list, i);
         }
