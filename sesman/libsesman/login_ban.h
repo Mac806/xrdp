@@ -61,6 +61,16 @@ struct login_ban_config
 struct login_ban;
 
 /**
+ * Result of login_ban_record_failure()
+ */
+enum login_ban_result
+{
+    LOGIN_BAN_NOT_BLOCKED = 0,  ///< The address is not blocked
+    LOGIN_BAN_NEWLY_BLOCKED,    ///< This failure has just blocked the address
+    LOGIN_BAN_ALREADY_BLOCKED   ///< The address was already blocked
+};
+
+/**
  * Create a ban table
  *
  * @param max_entries Maximum number of addresses to track. If 0, the
@@ -115,9 +125,15 @@ login_ban_is_blocked(struct login_ban *self,
  * @param cfg Current settings
  * @param ip Client IP address. Invalid or empty addresses are ignored
  * @param now Current time
- * @return != 0 if the address is now blocked
+ * @return A value from enum login_ban_result. Any value other than
+ *         LOGIN_BAN_NOT_BLOCKED means the address is blocked.
+ *
+ * LOGIN_BAN_NEWLY_BLOCKED is returned only once for each block, so that
+ * the caller can log the block once. More failures while the address is
+ * blocked (e.g. from a second connection which was already open) give
+ * LOGIN_BAN_ALREADY_BLOCKED.
  */
-int
+enum login_ban_result
 login_ban_record_failure(struct login_ban *self,
                          const struct login_ban_config *cfg,
                          const char *ip, time_t now);

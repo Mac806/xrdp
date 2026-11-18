@@ -236,7 +236,7 @@ login_ban_is_blocked(struct login_ban *self,
 }
 
 /*****************************************************************************/
-int
+enum login_ban_result
 login_ban_record_failure(struct login_ban *self,
                          const struct login_ban_config *cfg,
                          const char *ip, time_t now)
@@ -247,7 +247,7 @@ login_ban_record_failure(struct login_ban *self,
     if (self == NULL || cfg == NULL || cfg->max_failures == 0 ||
             login_ban_normalise_ip(ip, norm_ip, sizeof(norm_ip)) != 0)
     {
-        return 0;
+        return LOGIN_BAN_NOT_BLOCKED;
     }
 
     e = find_entry(self, norm_ip, NULL);
@@ -257,7 +257,7 @@ login_ban_record_failure(struct login_ban *self,
         {
             /* Already blocked. Don't extend the block, so that a
              * client which keeps trying is not blocked forever */
-            return 1;
+            return LOGIN_BAN_ALREADY_BLOCKED;
         }
         if (entry_is_expired(e, cfg, now))
         {
@@ -287,10 +287,10 @@ login_ban_record_failure(struct login_ban *self,
     if (e->failures >= cfg->max_failures && cfg->ban_time > 0)
     {
         e->banned_until = now + (time_t)cfg->ban_time;
-        return 1;
+        return LOGIN_BAN_NEWLY_BLOCKED;
     }
 
-    return 0;
+    return LOGIN_BAN_NOT_BLOCKED;
 }
 
 /*****************************************************************************/

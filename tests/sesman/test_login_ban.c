@@ -216,11 +216,29 @@ START_TEST(test_ban__not_extended)
 {
     unsigned int remaining = 0;
 
-    ck_assert_int_eq(fail_n("10.0.0.1", 3, T0), 1);
-    ck_assert_int_eq(fail_n("10.0.0.1", 5, T0 + 50), 1);
+    ck_assert_int_eq(fail_n("10.0.0.1", 3, T0), LOGIN_BAN_NEWLY_BLOCKED);
+    ck_assert_int_eq(fail_n("10.0.0.1", 5, T0 + 50),
+                     LOGIN_BAN_ALREADY_BLOCKED);
     ck_assert_int_eq(login_ban_is_blocked(g_ban, &g_cfg, "10.0.0.1",
                                           T0 + 50, &remaining), 1);
     ck_assert_uint_eq(remaining, 50);
+}
+END_TEST
+
+/******************************************************************************/
+/* "Newly blocked" is returned once per block, so the block is logged
+ * once even if other connections keep failing (QA finding) */
+START_TEST(test_ban__newly_blocked_once)
+{
+    ck_assert_int_eq(fail_n("10.0.0.1", 2, T0), LOGIN_BAN_NOT_BLOCKED);
+    ck_assert_int_eq(fail_n("10.0.0.1", 1, T0), LOGIN_BAN_NEWLY_BLOCKED);
+    ck_assert_int_eq(fail_n("10.0.0.1", 1, T0), LOGIN_BAN_ALREADY_BLOCKED);
+    ck_assert_int_eq(fail_n("10.0.0.1", 1, T0 + 99),
+                     LOGIN_BAN_ALREADY_BLOCKED);
+
+    /* After the block ends, a new block is "new" again */
+    ck_assert_int_eq(fail_n("10.0.0.1", 3, T0 + 100),
+                     LOGIN_BAN_NEWLY_BLOCKED);
 }
 END_TEST
 
@@ -361,6 +379,7 @@ make_suite_test_login_ban(void)
     tcase_add_test(tc, test_ban__expires);
     tcase_add_test(tc, test_ban__window_expires);
     tcase_add_test(tc, test_ban__not_extended);
+    tcase_add_test(tc, test_ban__newly_blocked_once);
     tcase_add_test(tc, test_ban__success_resets);
     tcase_add_test(tc, test_ban__invalid_ip_ignored);
     tcase_add_test(tc, test_ban__settings_change);
