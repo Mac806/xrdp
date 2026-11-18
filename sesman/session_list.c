@@ -498,7 +498,7 @@ session_list_check_wait_objs(void)
         {
             /* Only sessions which really started are audited. This also
              * covers a session whose sesexec ended without telling us */
-            if (si->state == E_SESSION_RUNNING)
+            if (si != NULL && si->state == E_SESSION_RUNNING)
             {
                 sesman_audit_session(SA_SESSION_FINISH, si,
                                      si->start_ip_addr, NULL, NULL);

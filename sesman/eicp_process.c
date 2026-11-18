@@ -161,15 +161,18 @@ static int
 process_login_failed_request(struct scp_list_item *sli)
 {
     struct login_ban_config ban_cfg;
-    int is_blocked;
+    enum login_ban_result result;
 
     sesman_get_login_ban_config(&ban_cfg);
 
     /* Use the IP address sesman stored when the login started. This
      * comes from xrdp, and doesn't depend on anything sesexec says */
-    is_blocked = login_ban_record_failure(g_login_ban, &ban_cfg,
-                                          sli->start_ip_addr, time(NULL));
-    if (is_blocked)
+    result = login_ban_record_failure(g_login_ban, &ban_cfg,
+                                      sli->start_ip_addr, time(NULL));
+
+    /* Log a block once. Later failures from connections which were
+     * already open when the block started aren't logged again */
+    if (result == LOGIN_BAN_NEWLY_BLOCKED)
     {
         LOG(LOG_LEVEL_WARNING,
             "IP %s is blocked for %u seconds after %u failed logins",
@@ -177,7 +180,8 @@ process_login_failed_request(struct scp_list_item *sli)
         sesman_audit_ip_blocked(sli->start_ip_addr, sli->username);
     }
 
-    return eicp_send_login_failed_response(sli->sesexec_trans, is_blocked);
+    return eicp_send_login_failed_response(sli->sesexec_trans,
+                                           result != LOGIN_BAN_NOT_BLOCKED);
 }
 
 /******************************************************************************/
