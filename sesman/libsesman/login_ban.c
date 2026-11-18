@@ -28,8 +28,10 @@
 #endif
 
 #include <string.h>
-#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>  /* AF_INET, AF_INET6 (needed on FreeBSD) */
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "login_ban.h"
 #include "os_calls.h"
